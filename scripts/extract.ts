@@ -1,9 +1,35 @@
-import { parse } from "@vue/compiler-sfc";
+import { parse, compileTemplate } from "@vue/compiler-sfc";
 import chalk from "chalk";
 import fs from "fs";
+import ts from "typescript";
 import { GettextExtractor, HtmlExtractors, JsExtractors } from "gettext-extractor";
 import { attributeEmbeddedJsExtractor } from "./attributeEmbeddedJsExtractor";
 import { embeddedJsExtractor } from "./embeddedJsExtractor";
+import {JsUtils} from 'gettext-extractor/dist/js/utils'
+
+
+
+JsUtils.segmentsMatchPropertyExpression = (segments: string[], propertyAccessExpression: any): boolean =>{
+  segments = segments.slice();
+  if (!(segments.pop() === propertyAccessExpression.name.text)) {
+      return false;
+  }
+  let segment;
+  switch (propertyAccessExpression.expression.kind) {
+      case ts.SyntaxKind.Identifier:
+          return true;
+          return (segments.length === 0 || segments.length === 1 && segments[0] === '[this]')
+              && segment === propertyAccessExpression.expression.text;
+      case ts.SyntaxKind.ThisKeyword:
+          segment = segments.pop();
+          return segments.length === 0 && (segment === 'this' || segment === '[this]');
+      case ts.SyntaxKind.PropertyAccessExpression:
+          return JsUtils.segmentsMatchPropertyExpression(segments, propertyAccessExpression.expression);
+  }
+  return false;
+}
+
+
 
 const extractFromFiles = async (filePaths: string[], potPath: string) => {
   const extr = new GettextExtractor();
@@ -79,11 +105,22 @@ const extractFromFiles = async (filePaths: string[], potPath: string) => {
         const { descriptor, errors } = parse(buffer, {
           filename: fp,
           sourceRoot: process.cwd(),
-        });
+        }); 
         if (errors.length > 0) {
           errors.forEach((e) => console.error(e));
         }
-        if (descriptor.template) {
+        if (descriptor.template && (descriptor.template.lang || 'html') !== 'html') {
+          // convert template to js
+          const vueTemplate = compileTemplate({
+            id: '0',
+            source: descriptor.template.content,
+            filename: descriptor.filename,
+            preprocessLang: descriptor.template.lang
+          });
+          jsParser.parseString(vueTemplate.code, descriptor.filename, {
+            lineNumberStart: 0,
+          });
+        } else if (descriptor.template){
           htmlParser.parseString(descriptor.template.content, descriptor.filename, {
             lineNumberStart: descriptor.template.loc.start.line,
           });
