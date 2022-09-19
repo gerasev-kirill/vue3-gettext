@@ -89,7 +89,7 @@ var compilePoFiles = function (localesPaths) { return tslib.__awaiter(void 0, vo
 }); };
 
 var loadConfig = function (cliArgs) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
     var moduleName = "gettext";
     var explorer = cosmiconfig.cosmiconfigSync(moduleName, {
         searchPlaces: ["".concat(moduleName, ".config.js"), "".concat(moduleName, ".config.json")],
@@ -118,16 +118,17 @@ var loadConfig = function (cliArgs) {
             path: ((_b = config.input) === null || _b === void 0 ? void 0 : _b.path) || "./src",
             include: ((_c = config.input) === null || _c === void 0 ? void 0 : _c.include) || ["**/*.js", "**/*.ts", "**/*.vue"],
             exclude: ((_d = config.input) === null || _d === void 0 ? void 0 : _d.exclude) || [],
+            excludePot: ((_e = config.input) === null || _e === void 0 ? void 0 : _e.excludePot) || []
         },
         output: {
             path: languagePath,
-            potPath: joinPathIfRelative((_e = config.output) === null || _e === void 0 ? void 0 : _e.potPath) || joinPath("./messages.pot"),
-            jsonPath: joinPathIfRelative((_f = config.output) === null || _f === void 0 ? void 0 : _f.jsonPath) ||
-                (((_g = config.output) === null || _g === void 0 ? void 0 : _g.splitJson) ? joinPath("./") : joinPath("./translations.json")),
-            locales: ((_h = config.output) === null || _h === void 0 ? void 0 : _h.locales) || ["en"],
-            flat: ((_j = config.output) === null || _j === void 0 ? void 0 : _j.flat) === undefined ? false : config.output.flat,
-            linguas: ((_k = config.output) === null || _k === void 0 ? void 0 : _k.linguas) === undefined ? true : config.output.linguas,
-            splitJson: ((_l = config.output) === null || _l === void 0 ? void 0 : _l.splitJson) === undefined ? false : config.output.splitJson,
+            potPath: joinPathIfRelative((_f = config.output) === null || _f === void 0 ? void 0 : _f.potPath) || joinPath("./messages.pot"),
+            jsonPath: joinPathIfRelative((_g = config.output) === null || _g === void 0 ? void 0 : _g.jsonPath) ||
+                (((_h = config.output) === null || _h === void 0 ? void 0 : _h.splitJson) ? joinPath("./") : joinPath("./translations.json")),
+            locales: ((_j = config.output) === null || _j === void 0 ? void 0 : _j.locales) || ["en"],
+            flat: ((_k = config.output) === null || _k === void 0 ? void 0 : _k.flat) === undefined ? false : config.output.flat,
+            linguas: ((_l = config.output) === null || _l === void 0 ? void 0 : _l.linguas) === undefined ? true : config.output.linguas,
+            splitJson: ((_m = config.output) === null || _m === void 0 ? void 0 : _m.splitJson) === undefined ? false : config.output.splitJson,
         },
     };
 };

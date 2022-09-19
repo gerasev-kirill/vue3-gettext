@@ -10,6 +10,7 @@ var path = require('path');
 var cosmiconfig = require('cosmiconfig');
 var compilerSfc = require('@vue/compiler-sfc');
 var ts = require('typescript');
+var pofile = require('pofile');
 var gettextExtractor = require('gettext-extractor');
 var validate = require('gettext-extractor/dist/utils/validate');
 var selector = require('gettext-extractor/dist/html/selector');
@@ -27,10 +28,11 @@ var fs__default = /*#__PURE__*/_interopDefaultLegacy(fs);
 var glob__default = /*#__PURE__*/_interopDefaultLegacy(glob);
 var path__default = /*#__PURE__*/_interopDefaultLegacy(path);
 var ts__default = /*#__PURE__*/_interopDefaultLegacy(ts);
+var pofile__default = /*#__PURE__*/_interopDefaultLegacy(pofile);
 var treeAdapter__default = /*#__PURE__*/_interopDefaultLegacy(treeAdapter);
 
 var loadConfig = function (cliArgs) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
     var moduleName = "gettext";
     var explorer = cosmiconfig.cosmiconfigSync(moduleName, {
         searchPlaces: ["".concat(moduleName, ".config.js"), "".concat(moduleName, ".config.json")],
@@ -59,16 +61,17 @@ var loadConfig = function (cliArgs) {
             path: ((_b = config.input) === null || _b === void 0 ? void 0 : _b.path) || "./src",
             include: ((_c = config.input) === null || _c === void 0 ? void 0 : _c.include) || ["**/*.js", "**/*.ts", "**/*.vue"],
             exclude: ((_d = config.input) === null || _d === void 0 ? void 0 : _d.exclude) || [],
+            excludePot: ((_e = config.input) === null || _e === void 0 ? void 0 : _e.excludePot) || []
         },
         output: {
             path: languagePath,
-            potPath: joinPathIfRelative((_e = config.output) === null || _e === void 0 ? void 0 : _e.potPath) || joinPath("./messages.pot"),
-            jsonPath: joinPathIfRelative((_f = config.output) === null || _f === void 0 ? void 0 : _f.jsonPath) ||
-                (((_g = config.output) === null || _g === void 0 ? void 0 : _g.splitJson) ? joinPath("./") : joinPath("./translations.json")),
-            locales: ((_h = config.output) === null || _h === void 0 ? void 0 : _h.locales) || ["en"],
-            flat: ((_j = config.output) === null || _j === void 0 ? void 0 : _j.flat) === undefined ? false : config.output.flat,
-            linguas: ((_k = config.output) === null || _k === void 0 ? void 0 : _k.linguas) === undefined ? true : config.output.linguas,
-            splitJson: ((_l = config.output) === null || _l === void 0 ? void 0 : _l.splitJson) === undefined ? false : config.output.splitJson,
+            potPath: joinPathIfRelative((_f = config.output) === null || _f === void 0 ? void 0 : _f.potPath) || joinPath("./messages.pot"),
+            jsonPath: joinPathIfRelative((_g = config.output) === null || _g === void 0 ? void 0 : _g.jsonPath) ||
+                (((_h = config.output) === null || _h === void 0 ? void 0 : _h.splitJson) ? joinPath("./") : joinPath("./translations.json")),
+            locales: ((_j = config.output) === null || _j === void 0 ? void 0 : _j.locales) || ["en"],
+            flat: ((_k = config.output) === null || _k === void 0 ? void 0 : _k.flat) === undefined ? false : config.output.flat,
+            linguas: ((_l = config.output) === null || _l === void 0 ? void 0 : _l.linguas) === undefined ? true : config.output.linguas,
+            splitJson: ((_m = config.output) === null || _m === void 0 ? void 0 : _m.splitJson) === undefined ? false : config.output.splitJson,
         },
     };
 };
@@ -144,12 +147,69 @@ utils.JsUtils.segmentsMatchPropertyExpression = function (segments, propertyAcce
     }
     return false;
 };
-var extractFromFiles = function (filePaths, potPath) { return tslib.__awaiter(void 0, void 0, void 0, function () {
+var GettextExtractor = /** @class */ (function (_super) {
+    tslib.__extends(GettextExtractor, _super);
+    function GettextExtractor() {
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.banned = [];
+        return _this;
+    }
+    GettextExtractor.prototype.loadBannedPotAsync = function (potPaths) {
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            return tslib.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        this.banned = [];
+                        return [4 /*yield*/, Promise.allSettled(potPaths.map(function (fpath) {
+                                return new Promise(function (resolve, reject) {
+                                    pofile__default["default"].load(fpath, function (err, po) {
+                                        if (err) {
+                                            reject(err);
+                                            return;
+                                        }
+                                        po.items.forEach(function (item) {
+                                            _this.banned.push({
+                                                text: item.msgid,
+                                                textPlural: item.msgid_plural,
+                                                context: item.msgctxt,
+                                                references: [],
+                                                comments: []
+                                            });
+                                        });
+                                        resolve(undefined);
+                                    });
+                                });
+                            }))];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    GettextExtractor.prototype.getMessages = function () {
+        var _this = this;
+        var messages = _super.prototype.getMessages.call(this);
+        return messages.filter(function (m) {
+            for (var _i = 0, _a = _this.banned; _i < _a.length; _i++) {
+                var b = _a[_i];
+                if (b.text === m.text && b.textPlural == m.textPlural && b.context === m.context) {
+                    return false;
+                }
+            }
+            return true;
+        });
+    };
+    return GettextExtractor;
+}(gettextExtractor.GettextExtractor));
+var extractFromFiles = function (filePaths, potPath, excludePotPaths) { return tslib.__awaiter(void 0, void 0, void 0, function () {
     var extr, jsParser, htmlParser;
     return tslib.__generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                extr = new gettextExtractor.GettextExtractor();
+                extr = new GettextExtractor();
+                return [4 /*yield*/, extr.loadBannedPotAsync(excludePotPaths || [])];
+            case 1:
+                _a.sent();
                 jsParser = extr.createJsParser([
                     gettextExtractor.JsExtractors.callExpression(["$gettext", "[this].$gettext"], {
                         content: {
@@ -264,7 +324,7 @@ var extractFromFiles = function (filePaths, potPath) { return tslib.__awaiter(vo
                             }
                         });
                     }); }))];
-            case 1:
+            case 2:
                 _a.sent();
                 extr.savePotFile(potPath);
                 console.info("".concat(chalk__default["default"].green("Extraction successful"), ", ").concat(chalk__default["default"].blueBright(potPath), " created."));
@@ -353,7 +413,7 @@ console.info();
                 console.info();
                 files.forEach(function (f) { return console.info(chalk__default["default"].grey(f)); });
                 console.info();
-                return [4 /*yield*/, extractFromFiles(files, config.output.potPath)];
+                return [4 /*yield*/, extractFromFiles(files, config.output.potPath, config.input.excludePot)];
             case 2:
                 _b.sent();
                 _i = 0, _a = config.output.locales;
