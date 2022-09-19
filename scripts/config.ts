@@ -33,6 +33,7 @@ export const loadConfig = (cliArgs?: { config?: string }): GettextConfig => {
       path: config.input?.path || "./src",
       include: config.input?.include || ["**/*.js", "**/*.ts", "**/*.vue"],
       exclude: config.input?.exclude || [],
+      excludePot: config.input?.excludePot || []
     },
     output: {
       path: languagePath,

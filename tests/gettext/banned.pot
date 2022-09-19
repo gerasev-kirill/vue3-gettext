@@ -1,0 +1,21 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: Bootstrap5/modals/components/UibModal.vue:99
+msgid "Cancel"
+msgstr ""
+
+#: Bootstrap5/_private/translate.vue:4
+msgctxt "gdpr"
+msgid "Cache for google maps"
+msgstr ""
+
+#: Bootstrap5/components/UibDurationpickerInput.vue:46
+#: Bootstrap5/filters/_translate.vue:4
+msgctxt "medium duration text"
+msgid "day"
+msgid_plural "days"
+msgstr[0] ""
+msgstr[1] ""
+

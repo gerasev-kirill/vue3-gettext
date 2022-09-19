@@ -68,7 +68,7 @@ console.info();
   console.info();
   files.forEach((f) => console.info(chalk.grey(f)));
   console.info();
-  await extractFromFiles(files, config.output.potPath);
+  await extractFromFiles(files, config.output.potPath, config.input.excludePot);
 
   for (const loc of config.output.locales) {
     const poDir = config.output.flat ? config.output.path : path.join(config.output.path, loc);

@@ -2,10 +2,12 @@ import { parse, compileTemplate } from "@vue/compiler-sfc";
 import chalk from "chalk";
 import fs from "fs";
 import ts from "typescript";
-import { GettextExtractor, HtmlExtractors, JsExtractors } from "gettext-extractor";
+import pofile from "pofile";
+import { GettextExtractor as BaseGettextExtractor, HtmlExtractors, JsExtractors } from "gettext-extractor";
 import { attributeEmbeddedJsExtractor } from "./attributeEmbeddedJsExtractor";
 import { embeddedJsExtractor } from "./embeddedJsExtractor";
 import {JsUtils} from 'gettext-extractor/dist/js/utils'
+import { IMessage } from "gettext-extractor/dist/builder";
 
 
 
@@ -31,8 +33,48 @@ JsUtils.segmentsMatchPropertyExpression = (segments: string[], propertyAccessExp
 
 
 
-const extractFromFiles = async (filePaths: string[], potPath: string) => {
+class GettextExtractor extends BaseGettextExtractor{
+  banned: Array<IMessage> = [];
+  async loadBannedPotAsync(potPaths: Array<string>){
+    this.banned = [];
+    return await Promise.allSettled(potPaths.map((fpath)=>{
+      return new Promise((resolve, reject)=>{
+        pofile.load(fpath, (err, po)=>{
+          if (err){
+            reject(err)
+            return;
+          }
+          po.items.forEach((item)=>{
+            this.banned.push({
+              text: item.msgid,
+              textPlural: item.msgid_plural,
+              context: item.msgctxt,
+              references: [],
+              comments: []
+            })
+          })
+          resolve(undefined);
+        })
+      })
+    }));
+  }
+  getMessages(): IMessage[] {
+    let messages = super.getMessages();
+    return messages.filter((m)=>{
+      for (const b of this.banned) {
+        if (b.text === m.text && b.textPlural == m.textPlural && b.context === m.context){
+          return false;
+        }
+      }
+      return true
+    })
+  }
+}
+
+
+const extractFromFiles = async (filePaths: string[], potPath: string, excludePotPaths?: Array<string>) => {
   const extr = new GettextExtractor();
+  await extr.loadBannedPotAsync(excludePotPaths || [])
 
   const jsParser = extr.createJsParser([
     JsExtractors.callExpression(["$gettext", "[this].$gettext"], {

@@ -74,6 +74,8 @@ export interface GettextConfig {
     include: string[];
     /** glob patterns to exclude files from extraction */
     exclude: string[];
+    /** glob patterns to exclude strings by pot-file from extraction */
+    excludePot: string[];
   };
   output: {
     path: string;
