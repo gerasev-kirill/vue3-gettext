@@ -1,32 +1,6 @@
 import { inject, defineComponent, ref, onMounted, computed, getCurrentInstance, h, watch, reactive } from 'vue';
 
-/******************************************************************************
-Copyright (c) Microsoft Corporation.
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-***************************************************************************** */
-
-var __assign = function() {
-    __assign = Object.assign || function __assign(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
-
-var EVALUATION_RE = /[[\].]{1,2}/g;
+const EVALUATION_RE = /[[\].]{1,2}/g;
 /* Interpolation RegExp.
  *
  * Because interpolation inside attributes are deprecated in Vue 2 we have to
@@ -42,8 +16,8 @@ var EVALUATION_RE = /[[\].]{1,2}/g;
  *   \}                 => Ending delimiter: `}`
  * /g                   => Global: don't return after first match
  */
-var INTERPOLATION_RE = /%\{((?:.|\n)+?)\}/g;
-var MUSTACHE_SYNTAX_RE = /\{\{((?:.|\n)+?)\}\}/g;
+const INTERPOLATION_RE = /%\{((?:.|\n)+?)\}/g;
+const MUSTACHE_SYNTAX_RE = /\{\{((?:.|\n)+?)\}\}/g;
 /**
  * Evaluate a piece of template string containing %{ } placeholders.
  * E.g.: 'Hi %{ user.name }' => 'Hi Bob'
@@ -56,61 +30,57 @@ var MUSTACHE_SYNTAX_RE = /\{\{((?:.|\n)+?)\}\}/g;
  *
  * @return {String} The interpolated string
  */
-var interpolate = function (plugin) {
-    return function (msgid, context, disableHtmlEscaping, parent) {
-        if (context === void 0) { context = {}; }
-        if (disableHtmlEscaping === void 0) { disableHtmlEscaping = false; }
-        var silent = plugin.silent;
-        if (!silent && MUSTACHE_SYNTAX_RE.test(msgid)) {
-            console.warn("Mustache syntax cannot be used with vue-gettext. Please use \"%{}\" instead of \"{{}}\" in: ".concat(msgid));
+const interpolate = (plugin) => (msgid, context = {}, disableHtmlEscaping = false, parent) => {
+    const silent = plugin.silent;
+    if (!silent && MUSTACHE_SYNTAX_RE.test(msgid)) {
+        console.warn(`Mustache syntax cannot be used with vue-gettext. Please use "%{}" instead of "{{}}" in: ${msgid}`);
+    }
+    const result = msgid.replace(INTERPOLATION_RE, (_match, token) => {
+        const expression = token.trim();
+        let evaluated;
+        const escapeHtmlMap = {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;",
+        };
+        // Avoid eval() by splitting `expression` and looping through its different properties if any, see #55.
+        function getProps(obj, expression) {
+            const arr = expression.split(EVALUATION_RE).filter((x) => x);
+            while (arr.length) {
+                obj = obj[arr.shift()];
+            }
+            return obj;
         }
-        var result = msgid.replace(INTERPOLATION_RE, function (_match, token) {
-            var expression = token.trim();
-            var evaluated;
-            var escapeHtmlMap = {
-                "&": "&amp;",
-                "<": "&lt;",
-                ">": "&gt;",
-                '"': "&quot;",
-                "'": "&#039;",
-            };
-            // Avoid eval() by splitting `expression` and looping through its different properties if any, see #55.
-            function getProps(obj, expression) {
-                var arr = expression.split(EVALUATION_RE).filter(function (x) { return x; });
-                while (arr.length) {
-                    obj = obj[arr.shift()];
-                }
-                return obj;
+        function evalInContext(context, expression, parent) {
+            try {
+                evaluated = getProps(context, expression);
             }
-            function evalInContext(context, expression, parent) {
-                try {
-                    evaluated = getProps(context, expression);
-                }
-                catch (e) {
-                    // Ignore errors, because this function may be called recursively later.
-                }
-                if (evaluated === undefined || evaluated === null) {
-                    if (parent) {
-                        // Recursively climb the parent chain to allow evaluation inside nested components, see #23 and #24.
-                        return evalInContext(parent.ctx, expression, parent.parent);
-                    }
-                    else {
-                        console.warn("Cannot evaluate expression: ".concat(expression));
-                        evaluated = expression;
-                    }
-                }
-                var result = evaluated.toString();
-                if (disableHtmlEscaping) {
-                    // Do not escape HTML, see #78.
-                    return result;
-                }
-                // Escape HTML, see #78.
-                return result.replace(/[&<>"']/g, function (m) { return escapeHtmlMap[m]; });
+            catch (e) {
+                // Ignore errors, because this function may be called recursively later.
             }
-            return evalInContext(context, expression, parent);
-        });
-        return result;
-    };
+            if (evaluated === undefined || evaluated === null) {
+                if (parent) {
+                    // Recursively climb the parent chain to allow evaluation inside nested components, see #23 and #24.
+                    return evalInContext(parent.ctx, expression, parent.parent);
+                }
+                else {
+                    console.warn(`Cannot evaluate expression: ${expression}`);
+                    evaluated = expression;
+                }
+            }
+            const result = evaluated.toString();
+            if (disableHtmlEscaping) {
+                // Do not escape HTML, see #78.
+                return result;
+            }
+            // Escape HTML, see #78.
+            return result.replace(/[&<>"']/g, (m) => escapeHtmlMap[m]);
+        }
+        return evalInContext(context, expression, parent);
+    });
+    return result;
 };
 // Store this values as function attributes for easy access elsewhere to bypass a Rollup
 // weak point with `export`:
@@ -257,7 +227,7 @@ var plurals = {
     },
 };
 
-var translate = function (language) { return ({
+const translate = (language) => ({
     /*
      * Get the translated string from the translation.json file generated by easygettext.
      *
@@ -269,41 +239,35 @@ var translate = function (language) { return ({
      *
      * @return {String} The translated string
      */
-    getTranslation: function (msgid, n, context, defaultPlural, languageKey, parameters, disableHtmlEscaping) {
-        if (n === void 0) { n = 1; }
-        if (context === void 0) { context = null; }
-        if (defaultPlural === void 0) { defaultPlural = null; }
-        if (disableHtmlEscaping === void 0) { disableHtmlEscaping = false; }
+    getTranslation: function (msgid, n = 1, context = null, defaultPlural = null, languageKey, parameters, disableHtmlEscaping = false) {
         if (languageKey === undefined) {
             languageKey = language.current;
         }
-        var interp = function (message, parameters) {
-            return parameters ? language.interpolate(message, parameters, disableHtmlEscaping) : message;
-        };
+        const interp = (message, parameters) => parameters ? language.interpolate(message, parameters, disableHtmlEscaping) : message;
         // spacing needs to be consistent even if a web template designer adds spaces between lines
         msgid = msgid.trim();
         if (!msgid) {
             return ""; // Allow empty strings.
         }
-        var silent = languageKey ? language.silent || language.muted.indexOf(languageKey) !== -1 : false;
+        const silent = languageKey ? language.silent || language.muted.indexOf(languageKey) !== -1 : false;
         // Default untranslated string, singular or plural.
-        var untranslated = defaultPlural && plurals.getTranslationIndex(languageKey, n) > 0 ? defaultPlural : msgid;
+        const untranslated = defaultPlural && plurals.getTranslationIndex(languageKey, n) > 0 ? defaultPlural : msgid;
         // `easygettext`'s `gettext-compile` generates a JSON version of a .po file based on its `Language` field.
         // But in this field, `ll_CC` combinations denoting a language’s main dialect are abbreviated as `ll`,
         // for example `de` is equivalent to `de_DE` (German as spoken in Germany).
         // See the `Language` section in https://www.gnu.org/software/gettext/manual/html_node/Header-Entry.html
         // So try `ll_CC` first, or the `ll` abbreviation which can be three-letter sometimes:
         // https://www.gnu.org/software/gettext/manual/html_node/Language-Codes.html#Language-Codes
-        var pluginTranslations = language.translations;
-        var translations = pluginTranslations[languageKey] || pluginTranslations[languageKey.split("_")[0]];
+        const pluginTranslations = language.translations;
+        const translations = pluginTranslations[languageKey] || pluginTranslations[languageKey.split("_")[0]];
         if (!translations) {
             if (!silent) {
-                console.warn("No translations found for ".concat(languageKey));
+                console.warn(`No translations found for ${languageKey}`);
             }
             return interp(untranslated, parameters);
         }
-        var getTranslationFromArray = function (arr) {
-            var translationIndex = plurals.getTranslationIndex(languageKey, n);
+        const getTranslationFromArray = (arr) => {
+            let translationIndex = plurals.getTranslationIndex(languageKey, n);
             // Do not assume that the default value of n is 1 for the singular form of all languages. E.g. Arabic
             if (arr.length === 1 && n === 1) {
                 translationIndex = 0;
@@ -313,24 +277,23 @@ var translate = function (language) { return ({
             }
             return interp(arr[translationIndex], parameters);
         };
-        var getUntranslatedMsg = function () {
+        const getUntranslatedMsg = () => {
             if (!silent) {
-                var msg = "Untranslated ".concat(languageKey, " key found: ").concat(msgid);
+                let msg = `Untranslated ${languageKey} key found: ${msgid}`;
                 if (context) {
-                    msg += " (with context: ".concat(context, ")");
+                    msg += ` (with context: ${context})`;
                 }
                 console.warn(msg);
             }
             return interp(untranslated, parameters);
         };
-        var translateMsg = function (msg, context) {
-            if (context === void 0) { context = null; }
+        const translateMsg = (msg, context = null) => {
             if (msg instanceof Object) {
                 if (Array.isArray(msg)) {
                     return getTranslationFromArray(msg);
                 }
-                var msgContext = context !== null && context !== void 0 ? context : "";
-                var ctxVal = msg[msgContext];
+                const msgContext = context !== null && context !== void 0 ? context : "";
+                const ctxVal = msg[msgContext];
                 return translateMsg(ctxVal);
             }
             if (context) {
@@ -341,7 +304,7 @@ var translate = function (language) { return ({
             }
             return interp(msg, parameters);
         };
-        var translated = translations[msgid];
+        const translated = translations[msgid];
         return translateMsg(translated, context);
     },
     /*
@@ -354,8 +317,7 @@ var translate = function (language) { return ({
      *
      * @return {String} The translated string
      */
-    gettext: function (msgid, parameters, disableHtmlEscaping) {
-        if (disableHtmlEscaping === void 0) { disableHtmlEscaping = false; }
+    gettext: function (msgid, parameters, disableHtmlEscaping = false) {
         return this.getTranslation(msgid, undefined, undefined, undefined, undefined, parameters, disableHtmlEscaping);
     },
     /*
@@ -369,8 +331,7 @@ var translate = function (language) { return ({
      *
      * @return {String} The translated string
      */
-    pgettext: function (context, msgid, parameters, disableHtmlEscaping) {
-        if (disableHtmlEscaping === void 0) { disableHtmlEscaping = false; }
+    pgettext: function (context, msgid, parameters, disableHtmlEscaping = false) {
         return this.getTranslation(msgid, 1, context, undefined, undefined, parameters, disableHtmlEscaping);
     },
     /*
@@ -386,8 +347,7 @@ var translate = function (language) { return ({
      *
      * @return {String} The translated string
      */
-    ngettext: function (msgid, plural, n, parameters, disableHtmlEscaping) {
-        if (disableHtmlEscaping === void 0) { disableHtmlEscaping = false; }
+    ngettext: function (msgid, plural, n, parameters, disableHtmlEscaping = false) {
         return this.getTranslation(msgid, n, null, plural, undefined, parameters, disableHtmlEscaping);
     },
     /*
@@ -404,13 +364,12 @@ var translate = function (language) { return ({
      *
      * @return {String} The translated string
      */
-    npgettext: function (context, msgid, plural, n, parameters, disableHtmlEscaping) {
-        if (disableHtmlEscaping === void 0) { disableHtmlEscaping = false; }
+    npgettext: function (context, msgid, plural, n, parameters, disableHtmlEscaping = false) {
         return this.getTranslation(msgid, n, context, plural, undefined, parameters, disableHtmlEscaping);
     },
-}); };
+});
 
-var GetTextSymbol = Symbol("GETTEXT");
+const GetTextSymbol = Symbol("GETTEXT");
 
 function normalizeTranslationKey(key) {
     return key
@@ -419,19 +378,19 @@ function normalizeTranslationKey(key) {
         .trim();
 }
 function normalizeTranslations(translations) {
-    var newTranslations = {};
-    Object.keys(translations).forEach(function (lang) {
-        var langData = translations[lang];
-        var newLangData = {};
-        Object.keys(langData).forEach(function (key) {
+    const newTranslations = {};
+    Object.keys(translations).forEach((lang) => {
+        const langData = translations[lang];
+        const newLangData = {};
+        Object.keys(langData).forEach((key) => {
             newLangData[normalizeTranslationKey(key)] = langData[key];
         });
         newTranslations[lang] = newLangData;
     });
     return newTranslations;
 }
-var useGettext = function () {
-    var gettext = inject(GetTextSymbol, null);
+const useGettext = () => {
+    const gettext = inject(GetTextSymbol, null);
     if (!gettext) {
         throw new Error("Failed to inject gettext. Make sure vue3-gettext is set up properly.");
     }
@@ -442,7 +401,7 @@ var useGettext = function () {
  * Translate content according to the current language.
  * @deprecated
  */
-var Component = defineComponent({
+const Component = defineComponent({
     // eslint-disable-next-line vue/multi-word-component-names, vue/component-definition-name-casing
     name: "translate",
     props: {
@@ -473,27 +432,27 @@ var Component = defineComponent({
             default: null,
         },
     },
-    setup: function (props, context) {
+    setup(props, context) {
         var _a, _b, _c;
-        var isPlural = props.translateN !== undefined && props.translatePlural !== undefined;
+        const isPlural = props.translateN !== undefined && props.translatePlural !== undefined;
         if (!isPlural && (props.translateN || props.translatePlural)) {
-            throw new Error("`translate-n` and `translate-plural` attributes must be used together: ".concat((_c = (_b = (_a = context.slots).default) === null || _b === void 0 ? void 0 : _b.call(_a)[0]) === null || _c === void 0 ? void 0 : _c.children, "."));
+            throw new Error(`\`translate-n\` and \`translate-plural\` attributes must be used together: ${(_c = (_b = (_a = context.slots).default) === null || _b === void 0 ? void 0 : _b.call(_a)[0]) === null || _c === void 0 ? void 0 : _c.children}.`);
         }
-        var root = ref();
-        var plugin = useGettext();
-        var msgid = ref(null);
-        onMounted(function () {
+        const root = ref();
+        const plugin = useGettext();
+        const msgid = ref(null);
+        onMounted(() => {
             if (!msgid.value && root.value) {
                 msgid.value = root.value.innerHTML.trim();
             }
         });
-        var translation = computed(function () {
+        const translation = computed(() => {
             var _a;
-            var translatedMsg = translate(plugin).getTranslation(msgid.value, props.translateN, props.translateContext, isPlural ? props.translatePlural : null, plugin.current);
+            const translatedMsg = translate(plugin).getTranslation(msgid.value, props.translateN, props.translateContext, isPlural ? props.translatePlural : null, plugin.current);
             return interpolate(plugin)(translatedMsg, props.translateParams, undefined, (_a = getCurrentInstance()) === null || _a === void 0 ? void 0 : _a.parent);
         });
         // The text must be wraped inside a root HTML element, so we use a <span> by default.
-        return function () {
+        return () => {
             if (!msgid.value) {
                 return h(props.tag, { ref: root }, context.slots.default ? context.slots.default() : "");
             }
@@ -502,24 +461,24 @@ var Component = defineComponent({
     },
 });
 
-var updateTranslation = function (language, el, binding, vnode) {
+const updateTranslation = (language, el, binding, vnode) => {
     var _a;
-    var attrs = vnode.props || {};
-    var msgid = el.dataset.msgid;
-    var translateContext = attrs["translate-context"];
-    var translateN = attrs["translate-n"];
-    var translatePlural = attrs["translate-plural"];
-    var isPlural = translateN !== undefined && translatePlural !== undefined;
-    var disableHtmlEscaping = attrs["render-html"] === "true";
+    const attrs = vnode.props || {};
+    const msgid = el.dataset.msgid;
+    const translateContext = attrs["translate-context"];
+    const translateN = attrs["translate-n"];
+    const translatePlural = attrs["translate-plural"];
+    const isPlural = translateN !== undefined && translatePlural !== undefined;
+    const disableHtmlEscaping = attrs["render-html"] === "true";
     if (!isPlural && (translateN || translatePlural)) {
         throw new Error("`translate-n` and `translate-plural` attributes must be used together:" + msgid + ".");
     }
     if (!language.silent && attrs["translate-params"]) {
-        console.warn("`translate-params` is required as an expression for v-translate directive. Please change to `v-translate='params'`: ".concat(msgid));
+        console.warn(`\`translate-params\` is required as an expression for v-translate directive. Please change to \`v-translate='params'\`: ${msgid}`);
     }
-    var translation = translate(language).getTranslation(msgid, translateN, translateContext, isPlural ? translatePlural : null, language.current);
-    var context = Object.assign((_a = binding.instance) !== null && _a !== void 0 ? _a : {}, binding.value);
-    var msg = interpolate(language)(translation, context, disableHtmlEscaping, null);
+    const translation = translate(language).getTranslation(msgid, translateN, translateContext, isPlural ? translatePlural : null, language.current);
+    const context = Object.assign((_a = binding.instance) !== null && _a !== void 0 ? _a : {}, binding.value);
+    const msg = interpolate(language)(translation, context, disableHtmlEscaping, null);
     el.innerHTML = msg;
 };
 /**
@@ -539,29 +498,29 @@ var updateTranslation = function (language, el, binding, vnode) {
  * @deprecated
  */
 function directive(language) {
-    var update = function (el, binding, vnode) {
+    const update = (el, binding, vnode) => {
         // Store the current language in the element's dataset.
         el.dataset.currentLanguage = language.current;
         updateTranslation(language, el, binding, vnode);
     };
     return {
-        beforeMount: function (el, binding, vnode) {
+        beforeMount(el, binding, vnode) {
             // Get the raw HTML and store it in the element's dataset (as advised in Vue's official guide).
             if (!el.dataset.msgid) {
                 el.dataset.msgid = el.innerHTML;
             }
-            watch(language, function () {
+            watch(language, () => {
                 update(el, binding, vnode);
             });
             update(el, binding, vnode);
         },
-        updated: function (el, binding, vnode) {
+        updated(el, binding, vnode) {
             update(el, binding, vnode);
         },
     };
 }
 
-var defaultOptions = {
+const defaultOptions = {
     /** all the available languages of your application. Keys must match locale names */
     availableLanguages: { en: "English" },
     defaultLanguage: "en",
@@ -572,34 +531,33 @@ var defaultOptions = {
     provideDirective: true,
     provideComponent: true,
 };
-function createGettext(options) {
-    if (options === void 0) { options = {}; }
-    Object.keys(options).forEach(function (key) {
+function createGettext(options = {}) {
+    Object.keys(options).forEach((key) => {
         if (Object.keys(defaultOptions).indexOf(key) === -1) {
-            throw new Error("".concat(key, " is an invalid option for the translate plugin."));
+            throw new Error(`${key} is an invalid option for the translate plugin.`);
         }
     });
-    var mergedOptions = __assign(__assign({}, defaultOptions), options);
-    var translations = ref(normalizeTranslations(mergedOptions.translations));
-    var gettext = reactive({
+    const mergedOptions = Object.assign(Object.assign({}, defaultOptions), options);
+    const translations = ref(normalizeTranslations(mergedOptions.translations));
+    const gettext = reactive({
         available: mergedOptions.availableLanguages,
         muted: mergedOptions.mutedLanguages,
         silent: mergedOptions.silent,
         translations: computed({
-            get: function () {
+            get: () => {
                 return translations.value;
             },
-            set: function (val) {
+            set: (val) => {
                 translations.value = normalizeTranslations(val);
             },
         }),
         current: mergedOptions.defaultLanguage,
-        install: function (app) {
+        install(app) {
             // TODO: is this needed?
             app[GetTextSymbol] = gettext;
             app.provide(GetTextSymbol, gettext);
             if (mergedOptions.setGlobalProperties) {
-                var globalProperties = app.config.globalProperties;
+                const globalProperties = app.config.globalProperties;
                 globalProperties.$gettext = gettext.$gettext;
                 globalProperties.$pgettext = gettext.$pgettext;
                 globalProperties.$ngettext = gettext.$ngettext;
@@ -616,8 +574,8 @@ function createGettext(options) {
             }
         },
     });
-    var translate$1 = translate(gettext);
-    var interpolate$1 = interpolate(gettext);
+    const translate$1 = translate(gettext);
+    const interpolate$1 = interpolate(gettext);
     gettext.$gettext = translate$1.gettext.bind(translate$1);
     gettext.$pgettext = translate$1.pgettext.bind(translate$1);
     gettext.$ngettext = translate$1.ngettext.bind(translate$1);
@@ -627,7 +585,7 @@ function createGettext(options) {
     gettext.component = Component;
     return gettext;
 }
-var defineGettextConfig = function (config) {
+const defineGettextConfig = (config) => {
     return config;
 };
 

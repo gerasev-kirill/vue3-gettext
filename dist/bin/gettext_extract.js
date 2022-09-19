@@ -31,26 +31,26 @@ var ts__default = /*#__PURE__*/_interopDefaultLegacy(ts);
 var pofile__default = /*#__PURE__*/_interopDefaultLegacy(pofile);
 var treeAdapter__default = /*#__PURE__*/_interopDefaultLegacy(treeAdapter);
 
-var loadConfig = function (cliArgs) {
+const loadConfig = (cliArgs) => {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
-    var moduleName = "gettext";
-    var explorer = cosmiconfig.cosmiconfigSync(moduleName, {
-        searchPlaces: ["".concat(moduleName, ".config.js"), "".concat(moduleName, ".config.json")],
+    const moduleName = "gettext";
+    const explorer = cosmiconfig.cosmiconfigSync(moduleName, {
+        searchPlaces: [`${moduleName}.config.js`, `${moduleName}.config.json`],
     });
-    var configRes;
+    let configRes;
     if (cliArgs === null || cliArgs === void 0 ? void 0 : cliArgs.config) {
         configRes = explorer.load(cliArgs.config);
         if (!configRes) {
-            throw new Error("Config not found: ".concat(cliArgs.config));
+            throw new Error(`Config not found: ${cliArgs.config}`);
         }
     }
     else {
         configRes = explorer.search();
     }
-    var config = configRes === null || configRes === void 0 ? void 0 : configRes.config;
-    var languagePath = ((_a = config.output) === null || _a === void 0 ? void 0 : _a.path) || "./src/language";
-    var joinPath = function (inputPath) { return path__default["default"].join(languagePath, inputPath); };
-    var joinPathIfRelative = function (inputPath) {
+    const config = configRes === null || configRes === void 0 ? void 0 : configRes.config;
+    const languagePath = ((_a = config.output) === null || _a === void 0 ? void 0 : _a.path) || "./src/language";
+    const joinPath = (inputPath) => path__default["default"].join(languagePath, inputPath);
+    const joinPathIfRelative = (inputPath) => {
         if (!inputPath) {
             return undefined;
         }
@@ -77,14 +77,14 @@ var loadConfig = function (cliArgs) {
 };
 
 function attributeEmbeddedJsExtractor(selector, jsParser) {
-    validate.Validate.required.nonEmptyString({ selector: selector });
-    validate.Validate.required.argument({ jsParser: jsParser });
-    return function (node, fileName) {
+    validate.Validate.required.nonEmptyString({ selector });
+    validate.Validate.required.argument({ jsParser });
+    return (node, fileName) => {
         if (typeof node.tagName !== "string") {
             return;
         }
-        var element = node;
-        element.attrs.forEach(function (attr) {
+        const element = node;
+        element.attrs.forEach((attr) => {
             var _a, _b;
             jsParser.parseString(attr.value, fileName, {
                 lineNumberStart: (_b = (_a = element.sourceCodeLocation) === null || _a === void 0 ? void 0 : _a.attrs[attr.name]) === null || _b === void 0 ? void 0 : _b.startLine,
@@ -93,15 +93,15 @@ function attributeEmbeddedJsExtractor(selector, jsParser) {
     };
 }
 
-var getElementContent = function (element, options) {
-    var content$1 = parse5.serialize(element, {});
+const getElementContent = (element, options) => {
+    let content$1 = parse5.serialize(element, {});
     // text nodes within template tags don't get serialized properly, this is a hack
     if (element.tagName === "template") {
-        var docFragment_1 = treeAdapter__default["default"].createDocumentFragment();
-        element.content.childNodes.forEach(function (childNode) {
-            treeAdapter__default["default"].appendChild(docFragment_1, childNode);
+        const docFragment = treeAdapter__default["default"].createDocumentFragment();
+        element.content.childNodes.forEach((childNode) => {
+            treeAdapter__default["default"].appendChild(docFragment, childNode);
         });
-        content$1 = parse5.serialize(docFragment_1, {});
+        content$1 = parse5.serialize(docFragment, {});
     }
     // Un-escape characters that get escaped by parse5
     content$1 = content$1.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
@@ -109,15 +109,15 @@ var getElementContent = function (element, options) {
 };
 function embeddedJsExtractor(selector$1, jsParser) {
     validate.Validate.required.nonEmptyString({ selector: selector$1 });
-    validate.Validate.required.argument({ jsParser: jsParser });
-    var selectors = new selector.ElementSelectorSet(selector$1);
-    return function (node, fileName) {
+    validate.Validate.required.argument({ jsParser });
+    const selectors = new selector.ElementSelectorSet(selector$1);
+    return (node, fileName) => {
         if (typeof node.tagName !== "string") {
             return;
         }
-        var element = node;
+        const element = node;
         if (selectors.anyMatch(element)) {
-            var source = getElementContent(element, {
+            const source = getElementContent(element, {
                 trimWhiteSpace: false,
                 preserveIndentation: true,
                 replaceNewLines: false,
@@ -130,12 +130,12 @@ function embeddedJsExtractor(selector$1, jsParser) {
     };
 }
 
-utils.JsUtils.segmentsMatchPropertyExpression = function (segments, propertyAccessExpression) {
+utils.JsUtils.segmentsMatchPropertyExpression = (segments, propertyAccessExpression) => {
     segments = segments.slice();
     if (!(segments.pop() === propertyAccessExpression.name.text)) {
         return false;
     }
-    var segment;
+    let segment;
     switch (propertyAccessExpression.expression.kind) {
         case ts__default["default"].SyntaxKind.Identifier:
             return true;
@@ -147,196 +147,164 @@ utils.JsUtils.segmentsMatchPropertyExpression = function (segments, propertyAcce
     }
     return false;
 };
-var GettextExtractor = /** @class */ (function (_super) {
-    tslib.__extends(GettextExtractor, _super);
-    function GettextExtractor() {
-        var _this = _super !== null && _super.apply(this, arguments) || this;
-        _this.banned = [];
-        return _this;
+class GettextExtractor extends gettextExtractor.GettextExtractor {
+    constructor() {
+        super();
+        this.banned = [];
     }
-    GettextExtractor.prototype.loadBannedPotAsync = function (potPaths) {
-        return tslib.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return tslib.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        this.banned = [];
-                        return [4 /*yield*/, Promise.allSettled(potPaths.map(function (fpath) {
-                                return new Promise(function (resolve, reject) {
-                                    pofile__default["default"].load(fpath, function (err, po) {
-                                        if (err) {
-                                            reject(err);
-                                            return;
-                                        }
-                                        po.items.forEach(function (item) {
-                                            _this.banned.push({
-                                                text: item.msgid,
-                                                textPlural: item.msgid_plural,
-                                                context: item.msgctxt,
-                                                references: [],
-                                                comments: []
-                                            });
-                                        });
-                                        resolve(undefined);
-                                    });
-                                });
-                            }))];
-                    case 1: return [2 /*return*/, _a.sent()];
-                }
-            });
+    loadBannedPotAsync(potPaths) {
+        return tslib.__awaiter(this, void 0, void 0, function* () {
+            this.banned = [];
+            return yield Promise.allSettled(potPaths.map((fpath) => {
+                return new Promise((resolve, reject) => {
+                    pofile__default["default"].load(fpath, (err, po) => {
+                        if (err) {
+                            reject(err);
+                            return;
+                        }
+                        po.items.forEach((item) => {
+                            this.banned.push({
+                                text: item.msgid,
+                                textPlural: item.msgid_plural,
+                                context: item.msgctxt,
+                                references: [],
+                                comments: []
+                            });
+                        });
+                        resolve(undefined);
+                    });
+                });
+            }));
         });
-    };
-    GettextExtractor.prototype.getMessages = function () {
-        var _this = this;
-        var messages = _super.prototype.getMessages.call(this);
-        return messages.filter(function (m) {
-            for (var _i = 0, _a = _this.banned; _i < _a.length; _i++) {
-                var b = _a[_i];
+    }
+    getMessages() {
+        let messages = super.getMessages();
+        return messages.filter((m) => {
+            for (const b of this.banned) {
                 if (b.text === m.text && b.textPlural == m.textPlural && b.context === m.context) {
                     return false;
                 }
             }
             return true;
         });
-    };
-    return GettextExtractor;
-}(gettextExtractor.GettextExtractor));
-var extractFromFiles = function (filePaths, potPath, excludePotPaths) { return tslib.__awaiter(void 0, void 0, void 0, function () {
-    var extr, jsParser, htmlParser;
-    return tslib.__generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                extr = new GettextExtractor();
-                return [4 /*yield*/, extr.loadBannedPotAsync(excludePotPaths || [])];
-            case 1:
-                _a.sent();
-                jsParser = extr.createJsParser([
-                    gettextExtractor.JsExtractors.callExpression(["$gettext", "[this].$gettext"], {
-                        content: {
-                            replaceNewLines: "\n",
-                        },
-                        arguments: {
-                            text: 0,
-                        },
-                    }),
-                    gettextExtractor.JsExtractors.callExpression(["$ngettext", "[this].$ngettext"], {
-                        content: {
-                            replaceNewLines: "\n",
-                        },
-                        arguments: {
-                            text: 0,
-                            textPlural: 1,
-                        },
-                    }),
-                    gettextExtractor.JsExtractors.callExpression(["$pgettext", "[this].$pgettext"], {
-                        content: {
-                            replaceNewLines: "\n",
-                        },
-                        arguments: {
-                            context: 0,
-                            text: 1,
-                        },
-                    }),
-                    gettextExtractor.JsExtractors.callExpression(["$npgettext", "[this].$npgettext"], {
-                        content: {
-                            replaceNewLines: "\n",
-                        },
-                        arguments: {
-                            context: 0,
-                            text: 1,
-                            textPlural: 2,
-                        },
-                    }),
-                ]);
-                htmlParser = extr.createHtmlParser([
-                    gettextExtractor.HtmlExtractors.elementContent("translate, [v-translate]", {
-                        content: {
-                            trimWhiteSpace: true,
-                            // TODO: figure out newlines for component
-                            replaceNewLines: " ",
-                        },
-                        attributes: {
-                            textPlural: "translate-plural",
-                            context: "translate-context",
-                            comment: "translate-comment",
-                        },
-                    }),
-                    attributeEmbeddedJsExtractor("[*=*]", jsParser),
-                    embeddedJsExtractor("*", jsParser),
-                ]);
-                return [4 /*yield*/, Promise.all(filePaths.map(function (fp) { return tslib.__awaiter(void 0, void 0, void 0, function () {
-                        var buffer, _a, descriptor, errors, vueTemplate;
-                        return tslib.__generator(this, function (_b) {
-                            switch (_b.label) {
-                                case 0: return [4 /*yield*/, new Promise(function (res, rej) {
-                                        return fs__default["default"].readFile(fp, "utf-8", function (err, data) {
-                                            if (err) {
-                                                rej(err);
-                                            }
-                                            res(data);
-                                        });
-                                    })];
-                                case 1:
-                                    buffer = _b.sent();
-                                    // TODO: make file extensions and parsers configurable
-                                    if (fp.endsWith(".vue")) {
-                                        _a = compilerSfc.parse(buffer, {
-                                            filename: fp,
-                                            sourceRoot: process.cwd(),
-                                        }), descriptor = _a.descriptor, errors = _a.errors;
-                                        if (errors.length > 0) {
-                                            errors.forEach(function (e) { return console.error(e); });
-                                        }
-                                        if (descriptor.template && (descriptor.template.lang || 'html') !== 'html') {
-                                            vueTemplate = compilerSfc.compileTemplate({
-                                                id: '0',
-                                                source: descriptor.template.content,
-                                                filename: descriptor.filename,
-                                                preprocessLang: descriptor.template.lang
-                                            });
-                                            jsParser.parseString(vueTemplate.code, descriptor.filename, {
-                                                lineNumberStart: 0,
-                                            });
-                                        }
-                                        else if (descriptor.template) {
-                                            htmlParser.parseString(descriptor.template.content, descriptor.filename, {
-                                                lineNumberStart: descriptor.template.loc.start.line,
-                                            });
-                                        }
-                                        if (descriptor.script) {
-                                            jsParser.parseString(descriptor.script.content, descriptor.filename, {
-                                                lineNumberStart: descriptor.script.loc.start.line,
-                                            });
-                                        }
-                                        if (descriptor.scriptSetup) {
-                                            jsParser.parseString(descriptor.scriptSetup.content, descriptor.filename, {
-                                                lineNumberStart: descriptor.scriptSetup.loc.start.line,
-                                            });
-                                        }
-                                    }
-                                    else if (fp.endsWith(".html")) {
-                                        htmlParser.parseString(buffer, fp);
-                                    }
-                                    else if (fp.endsWith(".js") || fp.endsWith(".ts") || fp.endsWith(".cjs") || fp.endsWith(".mjs")) {
-                                        jsParser.parseString(buffer, fp);
-                                    }
-                                    return [2 /*return*/];
-                            }
-                        });
-                    }); }))];
-            case 2:
-                _a.sent();
-                extr.savePotFile(potPath);
-                console.info("".concat(chalk__default["default"].green("Extraction successful"), ", ").concat(chalk__default["default"].blueBright(potPath), " created."));
-                extr.printStats();
-                return [2 /*return*/];
+    }
+}
+const extractFromFiles = (filePaths, potPath, excludePotPaths) => tslib.__awaiter(void 0, void 0, void 0, function* () {
+    const extr = new GettextExtractor();
+    yield extr.loadBannedPotAsync(excludePotPaths || []);
+    const jsParser = extr.createJsParser([
+        gettextExtractor.JsExtractors.callExpression(["$gettext", "[this].$gettext"], {
+            content: {
+                replaceNewLines: "\n",
+            },
+            arguments: {
+                text: 0,
+            },
+        }),
+        gettextExtractor.JsExtractors.callExpression(["$ngettext", "[this].$ngettext"], {
+            content: {
+                replaceNewLines: "\n",
+            },
+            arguments: {
+                text: 0,
+                textPlural: 1,
+            },
+        }),
+        gettextExtractor.JsExtractors.callExpression(["$pgettext", "[this].$pgettext"], {
+            content: {
+                replaceNewLines: "\n",
+            },
+            arguments: {
+                context: 0,
+                text: 1,
+            },
+        }),
+        gettextExtractor.JsExtractors.callExpression(["$npgettext", "[this].$npgettext"], {
+            content: {
+                replaceNewLines: "\n",
+            },
+            arguments: {
+                context: 0,
+                text: 1,
+                textPlural: 2,
+            },
+        }),
+    ]);
+    const htmlParser = extr.createHtmlParser([
+        gettextExtractor.HtmlExtractors.elementContent("translate, [v-translate]", {
+            content: {
+                trimWhiteSpace: true,
+                // TODO: figure out newlines for component
+                replaceNewLines: " ",
+            },
+            attributes: {
+                textPlural: "translate-plural",
+                context: "translate-context",
+                comment: "translate-comment",
+            },
+        }),
+        attributeEmbeddedJsExtractor("[*=*]", jsParser),
+        embeddedJsExtractor("*", jsParser),
+    ]);
+    yield Promise.all(filePaths.map((fp) => tslib.__awaiter(void 0, void 0, void 0, function* () {
+        const buffer = yield new Promise((res, rej) => fs__default["default"].readFile(fp, "utf-8", (err, data) => {
+            if (err) {
+                rej(err);
+            }
+            res(data);
+        }));
+        // TODO: make file extensions and parsers configurable
+        if (fp.endsWith(".vue")) {
+            const { descriptor, errors } = compilerSfc.parse(buffer, {
+                filename: fp,
+                sourceRoot: process.cwd(),
+            });
+            if (errors.length > 0) {
+                errors.forEach((e) => console.error(e));
+            }
+            if (descriptor.template && (descriptor.template.lang || 'html') !== 'html') {
+                // convert template to js
+                const vueTemplate = compilerSfc.compileTemplate({
+                    id: '0',
+                    source: descriptor.template.content,
+                    filename: descriptor.filename,
+                    preprocessLang: descriptor.template.lang
+                });
+                jsParser.parseString(vueTemplate.code, descriptor.filename, {
+                    lineNumberStart: 0,
+                });
+            }
+            else if (descriptor.template) {
+                htmlParser.parseString(descriptor.template.content, descriptor.filename, {
+                    lineNumberStart: descriptor.template.loc.start.line,
+                });
+            }
+            if (descriptor.script) {
+                jsParser.parseString(descriptor.script.content, descriptor.filename, {
+                    lineNumberStart: descriptor.script.loc.start.line,
+                });
+            }
+            if (descriptor.scriptSetup) {
+                jsParser.parseString(descriptor.scriptSetup.content, descriptor.filename, {
+                    lineNumberStart: descriptor.scriptSetup.loc.start.line,
+                });
+            }
         }
-    });
-}); };
+        else if (fp.endsWith(".html")) {
+            htmlParser.parseString(buffer, fp);
+        }
+        else if (fp.endsWith(".js") || fp.endsWith(".ts") || fp.endsWith(".cjs") || fp.endsWith(".mjs")) {
+            jsParser.parseString(buffer, fp);
+        }
+    })));
+    extr.savePotFile(potPath);
+    console.info(`${chalk__default["default"].green("Extraction successful")}, ${chalk__default["default"].blueBright(potPath)} created.`);
+    extr.printStats();
+});
 
 function execShellCommand(cmd) {
-    return new Promise(function (resolve) {
-        child_process.exec(cmd, function (error, stdout, stderr) {
+    return new Promise((resolve) => {
+        child_process.exec(cmd, (error, stdout, stderr) => {
             if (error) {
                 console.warn(error);
             }
@@ -345,8 +313,8 @@ function execShellCommand(cmd) {
     });
 }
 
-var optionDefinitions = [{ name: "config", alias: "c", type: String }];
-var options;
+const optionDefinitions = [{ name: "config", alias: "c", type: String }];
+let options;
 try {
     options = commandLineArgs__default["default"](optionDefinitions);
 }
@@ -354,103 +322,70 @@ catch (e) {
     console.error(e);
     process.exit(1);
 }
-var config = loadConfig(options);
-var globPromise = function (pattern) {
-    return new Promise(function (resolve, reject) {
-        try {
-            glob__default["default"](pattern, {}, function (er, res) {
-                resolve(res);
-            });
-        }
-        catch (e) {
-            reject(e);
-        }
-    });
-};
-var getFiles = function () { return tslib.__awaiter(void 0, void 0, void 0, function () {
-    var allFiles, excludeFiles, filesFlat, excludeFlat;
+const config = loadConfig(options);
+const globPromise = (pattern) => new Promise((resolve, reject) => {
+    try {
+        glob__default["default"](pattern, {}, (er, res) => {
+            resolve(res);
+        });
+    }
+    catch (e) {
+        reject(e);
+    }
+});
+var getFiles = () => tslib.__awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    return tslib.__generator(this, function (_b) {
-        switch (_b.label) {
-            case 0: return [4 /*yield*/, Promise.all((_a = config.input) === null || _a === void 0 ? void 0 : _a.include.map(function (pattern) {
-                    var searchPath = path__default["default"].join(config.input.path, pattern);
-                    console.info("Searching: ".concat(chalk__default["default"].blueBright(searchPath)));
-                    return globPromise(searchPath);
-                }))];
-            case 1:
-                allFiles = _b.sent();
-                return [4 /*yield*/, Promise.all(config.input.exclude.map(function (pattern) {
-                        var searchPath = path__default["default"].join(config.input.path, pattern);
-                        console.info("Excluding: ".concat(chalk__default["default"].blueBright(searchPath)));
-                        return globPromise(searchPath);
-                    }))];
-            case 2:
-                excludeFiles = _b.sent();
-                filesFlat = allFiles.reduce(function (prev, curr) { return tslib.__spreadArray(tslib.__spreadArray([], prev, true), curr, true); }, []);
-                excludeFlat = excludeFiles.reduce(function (prev, curr) { return tslib.__spreadArray(tslib.__spreadArray([], prev, true), curr, true); }, []);
-                excludeFlat.forEach(function (file) {
-                    var index = filesFlat.indexOf(file);
-                    if (index !== -1) {
-                        filesFlat.splice(index, 1);
-                    }
-                });
-                return [2 /*return*/, filesFlat];
+    const allFiles = yield Promise.all((_a = config.input) === null || _a === void 0 ? void 0 : _a.include.map((pattern) => {
+        const searchPath = path__default["default"].join(config.input.path, pattern);
+        console.info(`Searching: ${chalk__default["default"].blueBright(searchPath)}`);
+        return globPromise(searchPath);
+    }));
+    const excludeFiles = yield Promise.all(config.input.exclude.map((pattern) => {
+        const searchPath = path__default["default"].join(config.input.path, pattern);
+        console.info(`Excluding: ${chalk__default["default"].blueBright(searchPath)}`);
+        return globPromise(searchPath);
+    }));
+    const filesFlat = allFiles.reduce((prev, curr) => [...prev, ...curr], []);
+    const excludeFlat = excludeFiles.reduce((prev, curr) => [...prev, ...curr], []);
+    excludeFlat.forEach((file) => {
+        const index = filesFlat.indexOf(file);
+        if (index !== -1) {
+            filesFlat.splice(index, 1);
         }
     });
-}); };
-console.info("Input directory: ".concat(chalk__default["default"].blueBright(config.input.path)));
-console.info("Output directory: ".concat(chalk__default["default"].blueBright(config.output.path)));
-console.info("Output POT file: ".concat(chalk__default["default"].blueBright(config.output.potPath)));
-console.info("Locales: ".concat(chalk__default["default"].blueBright(config.output.locales)));
+    return filesFlat;
+});
+console.info(`Input directory: ${chalk__default["default"].blueBright(config.input.path)}`);
+console.info(`Output directory: ${chalk__default["default"].blueBright(config.output.path)}`);
+console.info(`Output POT file: ${chalk__default["default"].blueBright(config.output.potPath)}`);
+console.info(`Locales: ${chalk__default["default"].blueBright(config.output.locales)}`);
 console.info();
-(function () { return tslib.__awaiter(void 0, void 0, void 0, function () {
-    var files, _i, _a, loc, poDir, poFile, isFile, linguasPath;
-    return tslib.__generator(this, function (_b) {
-        switch (_b.label) {
-            case 0: return [4 /*yield*/, getFiles()];
-            case 1:
-                files = _b.sent();
-                console.info();
-                files.forEach(function (f) { return console.info(chalk__default["default"].grey(f)); });
-                console.info();
-                return [4 /*yield*/, extractFromFiles(files, config.output.potPath, config.input.excludePot)];
-            case 2:
-                _b.sent();
-                _i = 0, _a = config.output.locales;
-                _b.label = 3;
-            case 3:
-                if (!(_i < _a.length)) return [3 /*break*/, 9];
-                loc = _a[_i];
-                poDir = config.output.flat ? config.output.path : path__default["default"].join(config.output.path, loc);
-                poFile = config.output.flat ? path__default["default"].join(poDir, "".concat(loc, ".po")) : path__default["default"].join(poDir, "app.po");
-                fs__default["default"].mkdirSync(poDir, { recursive: true });
-                isFile = fs__default["default"].existsSync(poFile) && fs__default["default"].lstatSync(poFile).isFile();
-                if (!isFile) return [3 /*break*/, 5];
-                return [4 /*yield*/, execShellCommand("msgmerge --lang=".concat(loc, " --update ").concat(poFile, " ").concat(config.output.potPath, " --backup=off"))];
-            case 4:
-                _b.sent();
-                console.info("".concat(chalk__default["default"].green("Merged"), ": ").concat(chalk__default["default"].blueBright(poFile)));
-                return [3 /*break*/, 8];
-            case 5: return [4 /*yield*/, execShellCommand("msginit --no-translator --locale=".concat(loc, " --input=").concat(config.output.potPath, " --output-file=").concat(poFile))];
-            case 6:
-                _b.sent();
-                fs__default["default"].chmodSync(poFile, 438);
-                return [4 /*yield*/, execShellCommand("msgattrib --no-wrap --no-obsolete -o ".concat(poFile, " ").concat(poFile))];
-            case 7:
-                _b.sent();
-                console.info("".concat(chalk__default["default"].green("Created"), ": ").concat(chalk__default["default"].blueBright(poFile)));
-                _b.label = 8;
-            case 8:
-                _i++;
-                return [3 /*break*/, 3];
-            case 9:
-                if (config.output.linguas === true) {
-                    linguasPath = path__default["default"].join(config.output.path, "LINGUAS");
-                    fs__default["default"].writeFileSync(linguasPath, config.output.locales.join(" "));
-                    console.info();
-                    console.info("".concat(chalk__default["default"].green("Created"), ": ").concat(chalk__default["default"].blueBright(linguasPath)));
-                }
-                return [2 /*return*/];
+(() => tslib.__awaiter(void 0, void 0, void 0, function* () {
+    const files = yield getFiles();
+    console.info();
+    files.forEach((f) => console.info(chalk__default["default"].grey(f)));
+    console.info();
+    yield extractFromFiles(files, config.output.potPath, config.input.excludePot);
+    for (const loc of config.output.locales) {
+        const poDir = config.output.flat ? config.output.path : path__default["default"].join(config.output.path, loc);
+        const poFile = config.output.flat ? path__default["default"].join(poDir, `${loc}.po`) : path__default["default"].join(poDir, `app.po`);
+        fs__default["default"].mkdirSync(poDir, { recursive: true });
+        const isFile = fs__default["default"].existsSync(poFile) && fs__default["default"].lstatSync(poFile).isFile();
+        if (isFile) {
+            yield execShellCommand(`msgmerge --lang=${loc} --update ${poFile} ${config.output.potPath} --backup=off`);
+            console.info(`${chalk__default["default"].green("Merged")}: ${chalk__default["default"].blueBright(poFile)}`);
         }
-    });
-}); })();
+        else {
+            yield execShellCommand(`msginit --no-translator --locale=${loc} --input=${config.output.potPath} --output-file=${poFile}`);
+            fs__default["default"].chmodSync(poFile, 0o666);
+            yield execShellCommand(`msgattrib --no-wrap --no-obsolete -o ${poFile} ${poFile}`);
+            console.info(`${chalk__default["default"].green("Created")}: ${chalk__default["default"].blueBright(poFile)}`);
+        }
+    }
+    if (config.output.linguas === true) {
+        const linguasPath = path__default["default"].join(config.output.path, "LINGUAS");
+        fs__default["default"].writeFileSync(linguasPath, config.output.locales.join(" "));
+        console.info();
+        console.info(`${chalk__default["default"].green("Created")}: ${chalk__default["default"].blueBright(linguasPath)}`);
+    }
+}))();
