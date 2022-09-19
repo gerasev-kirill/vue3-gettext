@@ -35,6 +35,9 @@ JsUtils.segmentsMatchPropertyExpression = (segments: string[], propertyAccessExp
 
 class GettextExtractor extends BaseGettextExtractor{
   banned: Array<IMessage> = [];
+  constructor(){
+    super();
+  }
   async loadBannedPotAsync(potPaths: Array<string>){
     this.banned = [];
     return await Promise.allSettled(potPaths.map((fpath)=>{
