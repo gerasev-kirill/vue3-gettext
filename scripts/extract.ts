@@ -35,8 +35,11 @@ JsUtils.segmentsMatchPropertyExpression = (segments: string[], propertyAccessExp
 
 class GettextExtractor extends BaseGettextExtractor{
   banned: Array<IMessage> = [];
-  constructor(){
+  disablePoLineNumbers = false;
+
+  constructor(options?: {disablePoLineNumbers?: boolean}){
     super();
+    this.disablePoLineNumbers = !!options?.disablePoLineNumbers;
   }
   async loadBannedPotAsync(potPaths: Array<string>){
     this.banned = [];
@@ -64,9 +67,12 @@ class GettextExtractor extends BaseGettextExtractor{
   getMessages(): IMessage[] {
     let messages = super.getMessages();
     return messages.filter((m)=>{
-      m.references = m.references.map((r)=>{
-        return r.split(':')[0]
-      });
+      if (this.disablePoLineNumbers){
+        m.references = m.references.map((r)=>{
+          if (!r.includes(':')) return r;
+          return r.split(':')[0] + ':1'
+        });
+      }
       for (const b of this.banned) {
         if (b.text === m.text && b.textPlural == m.textPlural && b.context === m.context){
           return false;
@@ -78,8 +84,8 @@ class GettextExtractor extends BaseGettextExtractor{
 }
 
 
-const extractFromFiles = async (filePaths: string[], potPath: string, excludePotPaths?: Array<string>) => {
-  const extr = new GettextExtractor();
+const extractFromFiles = async (filePaths: string[], potPath: string, excludePotPaths?: Array<string>, disablePoLineNumbers?: boolean) => {
+  const extr = new GettextExtractor({disablePoLineNumbers});
   await extr.loadBannedPotAsync(excludePotPaths || [])
 
   const jsParser = extr.createJsParser([

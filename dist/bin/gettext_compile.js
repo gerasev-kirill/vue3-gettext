@@ -72,7 +72,7 @@ const compilePoFiles = (localesPaths) => tslib.__awaiter(void 0, void 0, void 0,
 });
 
 const loadConfig = (cliArgs) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
     const moduleName = "gettext";
     const explorer = cosmiconfig.cosmiconfigSync(moduleName, {
         searchPlaces: [`${moduleName}.config.js`, `${moduleName}.config.json`],
@@ -112,6 +112,7 @@ const loadConfig = (cliArgs) => {
             flat: ((_k = config.output) === null || _k === void 0 ? void 0 : _k.flat) === undefined ? false : config.output.flat,
             linguas: ((_l = config.output) === null || _l === void 0 ? void 0 : _l.linguas) === undefined ? true : config.output.linguas,
             splitJson: ((_m = config.output) === null || _m === void 0 ? void 0 : _m.splitJson) === undefined ? false : config.output.splitJson,
+            disablePoLineNumbers: !!((_o = config.output) === null || _o === void 0 ? void 0 : _o.disablePoLineNumbers)
         },
     };
 };

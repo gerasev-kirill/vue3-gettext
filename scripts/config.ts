@@ -45,6 +45,7 @@ export const loadConfig = (cliArgs?: { config?: string }): GettextConfig => {
       flat: config.output?.flat === undefined ? false : config.output.flat,
       linguas: config.output?.linguas === undefined ? true : config.output.linguas,
       splitJson: config.output?.splitJson === undefined ? false : config.output.splitJson,
+      disablePoLineNumbers: !!config.output?.disablePoLineNumbers
     },
   };
 };

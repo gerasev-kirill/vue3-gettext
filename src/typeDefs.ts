@@ -85,6 +85,7 @@ export interface GettextConfig {
     flat: boolean;
     linguas: boolean;
     splitJson: boolean;
+    disablePoLineNumbers?: boolean
   };
 }
 
