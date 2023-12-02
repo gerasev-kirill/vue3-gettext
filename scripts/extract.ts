@@ -64,6 +64,9 @@ class GettextExtractor extends BaseGettextExtractor{
   getMessages(): IMessage[] {
     let messages = super.getMessages();
     return messages.filter((m)=>{
+      m.references = m.references.map((r)=>{
+        return r.split(':')[0]
+      });
       for (const b of this.banned) {
         if (b.text === m.text && b.textPlural == m.textPlural && b.context === m.context){
           return false;
