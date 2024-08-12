@@ -8,5 +8,11 @@
     p {{$npgettext("medium duration text 2", "day", "days", 1)}}
     p(:title="$gettext('Tag attribute')")
     p(:title="$pgettext('with context', 'Tag attribute with context')")
+
+    p {{ $gettext('Clean text') }}
+    p {{ $gettext('Clean text.') }}
+    p {{ $gettext('Clean text!') }}
+    p {{ $gettext('[Clean text]') }}
+    p {{ $gettext('Clean text:') }}
 </template>
 

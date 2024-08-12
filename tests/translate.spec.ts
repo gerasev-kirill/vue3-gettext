@@ -128,6 +128,8 @@ describe("Translate tests", () => {
     setLanguage("fr_FR");
     expect(undetectableNgettext("%{ carCount } car", "%{ carCount } cars", 2)).toEqual("%{ carCount } véhicules");
 
+    expect(undetectableNgettext("%{ carCount } car!", "%{ carCount } cars!", 2)).toEqual("%{ carCount } véhicules!");
+
     setLanguage("en_US");
     expect(undetectableNgettext("%{ carCount } car", "%{ carCount } cars", 2)).toEqual("%{ carCount } cars");
 

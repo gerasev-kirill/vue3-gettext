@@ -18,7 +18,8 @@ function isMessagesEquals(a: any, b: any){
 describe("extract", () => {
   it("should extract strings from vue file", async () => {
     const PO_ITEMS = [
-      { msgid: 'Other text!', msgctxt: null, msgid_plural: null },
+      // восклицательный знак будет удален
+      { msgid: 'Other text', msgctxt: null, msgid_plural: null },
       { msgid: 'Tag attribute', msgctxt: null, msgid_plural: null },
       { msgid: 'Tag inner', msgctxt: null, msgid_plural: null },
       { msgid: 'Text from setup', msgctxt: null, msgid_plural: null },
@@ -32,7 +33,7 @@ describe("extract", () => {
     let potFilePath = path.join(BASE_DIR, "tmp", "pug.pot");
   
     let result = await extractFromFiles([
-        path.join(BASE_DIR, 'vue', 'Test.vue')
+        path.join(BASE_DIR, 'vue', 'GettextTest.vue')
     ], potFilePath);
     
     const catalog = Pofile.parse(readFileSync(potFilePath, 'utf-8'));
@@ -67,11 +68,15 @@ describe("extract", () => {
       msgid: "Tag attribute with context",
       msgctxt: "with context",
       msgid_plural: null
+    },{
+      msgid: 'Clean text',
+      msgctxt: null,
+      msgid_plural: null
     }]
     let potFilePath = path.join(BASE_DIR, "tmp", "pug.pot");
 
     let result = await extractFromFiles([
-        path.join(BASE_DIR, 'vue', 'Test2.vue')
+        path.join(BASE_DIR, 'vue', 'GettextTest2.vue')
     ], potFilePath, [
       path.join(BASE_DIR, "gettext/banned.pot")
     ]);

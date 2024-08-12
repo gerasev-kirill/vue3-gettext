@@ -66,7 +66,25 @@ class GettextExtractor extends BaseGettextExtractor{
   }
   getMessages(): IMessage[] {
     let messages = super.getMessages();
+    let addedMessages: Array<string> = []
+    function toFootprint(m: IMessage){
+      return `${m.text}-${m.textPlural}-${m.context}`
+    }
+    function cleanText(text: string|null|undefined){
+      if (!text) return text
+      return text.replace(/^[/\[\]\-\*\"\'\!\.\,\ :_=]+/g, '')
+                  .replace(/[/\[\]\-\*\"\'\!\.\,\ :_=]+$/, '');
+    }
+
+
     return messages.filter((m)=>{
+      m.text = cleanText(m.text) as string
+      m.textPlural = cleanText(m.textPlural)
+
+      const footprint = toFootprint(m)
+      if (addedMessages.includes(footprint)){
+        return false
+      }
       if (this.disablePoLineNumbers){
         m.references = m.references.map((r)=>{
           if (!r.includes(':')) return r;
@@ -78,6 +96,7 @@ class GettextExtractor extends BaseGettextExtractor{
           return false;
         }
       }
+      addedMessages.push(footprint)
       return true
     })
   }

@@ -182,7 +182,23 @@ class GettextExtractor extends gettextExtractor.GettextExtractor {
     }
     getMessages() {
         let messages = super.getMessages();
+        let addedMessages = [];
+        function toFootprint(m) {
+            return `${m.text}-${m.textPlural}-${m.context}`;
+        }
+        function cleanText(text) {
+            if (!text)
+                return text;
+            return text.replace(/^[/\[\]\-\*\"\'\!\.\,\ :_=]+/g, '')
+                .replace(/[/\[\]\-\*\"\'\!\.\,\ :_=]+$/, '');
+        }
         return messages.filter((m) => {
+            m.text = cleanText(m.text);
+            m.textPlural = cleanText(m.textPlural);
+            const footprint = toFootprint(m);
+            if (addedMessages.includes(footprint)) {
+                return false;
+            }
             if (this.disablePoLineNumbers) {
                 m.references = m.references.map((r) => {
                     if (!r.includes(':'))
@@ -195,6 +211,7 @@ class GettextExtractor extends gettextExtractor.GettextExtractor {
                     return false;
                 }
             }
+            addedMessages.push(footprint);
             return true;
         });
     }
